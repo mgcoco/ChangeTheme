@@ -41,7 +41,7 @@ public class SkinView {
             }
             else if(skinItem.getName().equals("src")){
                 if (skinItem.getTypeName().equals("drawable") || skinItem.getTypeName().equals("mipmap")){
-                    ((ImageView)view).setImageResource(SkinManager.getInstance().getDrawableId(skinItem.getResId()));
+                    ((ImageView)view).setImageDrawable(SkinManager.getInstance().getDrawable(skinItem.getResId()));
                 }
             }
             else if(skinItem.getName().equals("textColor")){

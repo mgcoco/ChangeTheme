@@ -43,7 +43,7 @@ public class SkinFactory implements LayoutInflater.Factory2 {
     @Override
     public View onCreateView(View parent, String name, Context context, AttributeSet attrs) {
         View view = null;
-        if(isSupported(name)){
+        if(isSupported(name) || name.startsWith("android")){
             view = onCreateView(name, context, attrs);
             parserView(view, name, attrs);
         }
