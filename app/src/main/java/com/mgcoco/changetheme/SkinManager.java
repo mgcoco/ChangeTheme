@@ -7,9 +7,12 @@ import android.content.res.AssetManager;
 import android.content.res.Resources;
 import android.graphics.drawable.Drawable;
 import android.view.LayoutInflater;
+import android.view.View;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
+import java.util.ArrayList;
+import java.util.List;
 
 public class SkinManager {
 
@@ -22,6 +25,8 @@ public class SkinManager {
     private String packageName;
 
     private SkinFactory skinFactory = new SkinFactory();
+
+    private List<SkinCustomView> customViewList = new ArrayList<>();
 
     public static synchronized SkinManager getInstance() {
         synchronized (SkinManager.class) {
@@ -43,16 +48,18 @@ public class SkinManager {
 
     public void loadSkinApk(String path) {
         PackageManager packageManager = context.getPackageManager();
+//        System.out.println(path);
         PackageInfo packageArchiveInfo = packageManager.getPackageArchiveInfo(path, PackageManager.GET_ACTIVITIES);
-        packageName = packageArchiveInfo.packageName;
-
-        try {
-            AssetManager assetManager = AssetManager.class.newInstance();
-            Method addAssetPath = assetManager.getClass().getDeclaredMethod("addAssetPath", String.class);
-            addAssetPath.invoke(assetManager, path);
-            resources = new Resources(assetManager, context.getResources().getDisplayMetrics(), context.getResources().getConfiguration());
-        } catch (Exception e) {
-            e.printStackTrace();
+        if(packageArchiveInfo != null) {
+            packageName = packageArchiveInfo.packageName;
+            try {
+                AssetManager assetManager = AssetManager.class.newInstance();
+                Method addAssetPath = assetManager.getClass().getDeclaredMethod("addAssetPath", String.class);
+                addAssetPath.invoke(assetManager, path);
+                resources = new Resources(assetManager, context.getResources().getDisplayMetrics(), context.getResources().getConfiguration());
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
         }
     }
 
@@ -98,14 +105,28 @@ public class SkinManager {
         return packageName;
     }
 
+    public void addCustomView(SkinCustomView skinView){
+        customViewList.add(skinView);
+    }
+
+    public List<SkinCustomView> getCustomViewList(){
+        return customViewList;
+    }
+
+    public SkinCustomView getCustomView(View customView){
+        for (SkinCustomView skinCustomView: getCustomViewList()){
+            if(customView.getClass().getName().equals(skinCustomView.name) || customView.getClass().getSimpleName().equals(skinCustomView.name)){
+                return skinCustomView;
+            }
+        }
+        return null;
+    }
+
     public int getDrawableId(int resId) {
         if(resourceIsNull()){
-            return resId;
+            return 0;
         }
-        int identifier = getIdentifier(resId);
-        if (identifier == 0)
-            return resId;
-        return identifier;
+        return getIdentifier(resId);
     }
 
     public Drawable getDrawable(int resId){

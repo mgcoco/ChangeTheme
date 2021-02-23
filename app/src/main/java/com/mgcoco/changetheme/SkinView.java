@@ -21,13 +21,19 @@ public class SkinView {
     }
 
     public void apply() {
+        SkinCustomView skinCustomView = SkinManager.getInstance().getCustomView(view);
+        if(skinCustomView != null){
+            for (SkinItem skinItem : skinItems) {
+                skinCustomView.customViewAttributeApplyListener.apply(view, skinItem.getTypeName(), skinItem.getResId());
+            }
+        }
         for (SkinItem skinItem : skinItems) {
             try {
                 switch (skinItem.getName()) {
                     case "background":
-                        if (skinItem.typeName.equals("color")) {
+                        if (skinItem.getTypeName().equals("color")) {
                             if (SkinManager.getInstance().resourceIsNull()) {
-                                view.setBackgroundResource(SkinManager.getInstance().getColor(skinItem.getResId()));
+                                view.setBackgroundResource(skinItem.getResId());
                             } else {
                                 view.setBackgroundColor(SkinManager.getInstance().getColor(skinItem.getResId()));
                             }
@@ -45,7 +51,6 @@ public class SkinView {
                         }
                         break;
                     case "textColor":
-                        System.out.println("===>text color:" + view + ", " + " txt:" + ((TextView) view).getText() + ", " + skinItem.getResId());
                         int col = SkinManager.getInstance().getColor(skinItem.getResId());
                         ((TextView) view).setTextColor(col);
                         break;
@@ -58,14 +63,15 @@ public class SkinView {
                         setSelectedTabIndicatorColor.invoke(view, SkinManager.getInstance().getColor(skinItem.getResId()));
                         break;
                     case "actualImageResource":
-                        int drawable = SkinManager.getInstance().getDrawableId(skinItem.getResId());
-                        Class<?> uriUtilClass = Class.forName("com.facebook.common.util.UriUtil");
-                        Object uriUtil = uriUtilClass.newInstance();
-                        Method getUriForQualifiedResource = uriUtilClass.getDeclaredMethod("getUriForQualifiedResource", String.class, int.class);
-                        Object uri = getUriForQualifiedResource.invoke(uriUtil, SkinManager.getInstance().getPackageName(), drawable);
-
-                        Method setActualImageResource = view.getClass().getDeclaredMethod("setImageURI", Uri.class);
-                        setActualImageResource.invoke(view, uri);
+                        int drawableId = SkinManager.getInstance().getDrawableId(skinItem.getResId());
+                        if(drawableId != 0) {
+                            Class<?> uriUtilClass = Class.forName("com.facebook.common.util.UriUtil");
+                            Object uriUtil = uriUtilClass.newInstance();
+                            Method getUriForQualifiedResource = uriUtilClass.getDeclaredMethod("getUriForQualifiedResource", String.class, int.class);
+                            Object uri = getUriForQualifiedResource.invoke(uriUtil, SkinManager.getInstance().getPackageName(), drawableId);
+                            Method setActualImageResource = view.getClass().getDeclaredMethod("setImageURI", Uri.class);
+                            setActualImageResource.invoke(view, uri);
+                        }
                         break;
                 }
             } catch (Exception e) {

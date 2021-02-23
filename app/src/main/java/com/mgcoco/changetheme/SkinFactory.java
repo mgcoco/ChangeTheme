@@ -8,6 +8,7 @@ import android.view.View;
 
 import java.lang.reflect.Constructor;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 public class SkinFactory implements LayoutInflater.Factory2 {
@@ -33,7 +34,9 @@ public class SkinFactory implements LayoutInflater.Factory2 {
     private static final String[] THIRDPARTY_ATTRIBUTE_NAME = {
             "actualImageResource",
             "tabIndicator",
-            "tabIndicatorColor"
+            "tabIndicatorColor",
+            "srcCompat",
+            "backgroundTint"
     };
 
     private List<SkinView> parseViewList = new ArrayList<>();
@@ -43,10 +46,16 @@ public class SkinFactory implements LayoutInflater.Factory2 {
             "com.google.android.material.tabs.TabLayout"
     };
 
+
     @Override
     public View onCreateView(View parent, String name, Context context, AttributeSet attrs) {
         View view = null;
-        if(isSupported(name) || name.startsWith("android")){
+        String supportedName = getSupportedName(name);
+        if(supportedName != null){
+            view = onCreateView(supportedName, context, attrs);
+            parserView(view, supportedName, attrs);
+        }
+        else if(name.startsWith("android")){
             view = onCreateView(name, context, attrs);
             parserView(view, name, attrs);
         }
@@ -76,64 +85,81 @@ public class SkinFactory implements LayoutInflater.Factory2 {
         }
     }
 
-    private boolean isSupported(String viewName){
-        for(String name: THIRDPARTY_VIEW){
-            if(viewName.contains(name)){
-                return true;
+    private String getSupportedName(String viewName){
+        for(SkinCustomView view: SkinManager.getInstance().getCustomViewList()){
+            if(viewName.equals(view.name)){
+                return view.fullName;
             }
         }
-        return false;
+        for(String name: THIRDPARTY_VIEW){
+            if(viewName.contains(name)){
+                return name;
+            }
+        }
+        return null;
     }
 
     private void parserView(View view, String name, AttributeSet attrs) {
-        List<SkinItem> skinItems = new ArrayList<>();
-        for (int i = 0; i < attrs.getAttributeCount(); i++) {
-            String attrName = attrs.getAttributeName(i);
+        if(view != null){
+            List<SkinItem> skinItems = new ArrayList<>();
+            for (int i = 0; i < attrs.getAttributeCount(); i++) {
+                String attrName = attrs.getAttributeName(i);
 
-            for(String nativeAttrName: NATIVE_ATTRIBUTE_NAME) {
-                if(attrName.contains(nativeAttrName)) {
-                    String attrValue = attrs.getAttributeValue(i);
-
-                    if(attrValue.startsWith("@")){
-                        addSkinItem(view, attrName, Integer.parseInt(attrValue.substring(1)), skinItems);
+                for(SkinCustomView customView: SkinManager.getInstance().getCustomViewList()) {
+                    if(!customView.getFullName().equals(name)){
+                        continue;
                     }
-                }
-            }
-            for(String thirdPartyAttrName: THIRDPARTY_ATTRIBUTE_NAME) {
-                if(attrName.contains(thirdPartyAttrName)) {
-                    String attrValue = attrs.getAttributeValue(i);
-                    if(attrValue.startsWith("@")){
-                        addSkinItem(view, attrName, Integer.parseInt(attrValue.substring(1)), skinItems);
-                    }
-                }
-            }
-            if(attrName.contains("style")){
-                try {
-                    TypedArray typedArray = view.getContext().obtainStyledAttributes(attrs.getStyleAttribute(), NATIVE_ATTRIBUTE_ID);
-                    if (typedArray.length() > 0){
-                        for(int ti = 0; ti < typedArray.length(); ti++){
-                            try{
-                                if(typedArray.hasValue(ti)){
-                                    int resId = typedArray.getResourceId(ti, -1);
-                                    if(resId != -1) {
-                                        addSkinItem(view, NATIVE_ATTRIBUTE_NAME[ti], resId, skinItems);
-                                    }
-                                }
-                            }
-                            catch (Exception e) {
-                                e.printStackTrace();
-                            }
+                    if(Arrays.asList(customView.getFieldName()).contains(attrName)){
+                        String attrValue = attrs.getAttributeValue(i);
+                        if(attrValue.startsWith("@")){
+                            addSkinItem(view, attrName, Integer.parseInt(attrValue.substring(1)), skinItems);
                         }
                     }
-                    typedArray.recycle();
-                } catch (Exception e) {
-                    e.printStackTrace();
+                }
+                for(String nativeAttrName: NATIVE_ATTRIBUTE_NAME) {
+                    if(attrName.contains(nativeAttrName)) {
+                        String attrValue = attrs.getAttributeValue(i);
+                        if(attrValue.startsWith("@")){
+                            addSkinItem(view, attrName, Integer.parseInt(attrValue.substring(1)), skinItems);
+                        }
+                    }
+                }
+                for(String thirdPartyAttrName: THIRDPARTY_ATTRIBUTE_NAME) {
+                    if(attrName.contains(thirdPartyAttrName)) {
+                        String attrValue = attrs.getAttributeValue(i);
+                        if(attrValue.startsWith("@")){
+                            addSkinItem(view, attrName, Integer.parseInt(attrValue.substring(1)), skinItems);
+                        }
+                    }
+                }
+                if(attrName.contains("style")){
+                    try {
+                        TypedArray typedArray = view.getContext().obtainStyledAttributes(attrs.getStyleAttribute(), NATIVE_ATTRIBUTE_ID);
+                        if (typedArray.length() > 0){
+                            for(int ti = 0; ti < typedArray.length(); ti++){
+                                try{
+                                    if(typedArray.hasValue(ti)){
+                                        int resId = typedArray.getResourceId(ti, -1);
+                                        if(resId != -1) {
+                                            addSkinItem(view, NATIVE_ATTRIBUTE_NAME[ti], resId, skinItems);
+                                        }
+                                    }
+                                }
+                                catch (Exception e) {
+                                    e.printStackTrace();
+                                }
+                            }
+                        }
+                        typedArray.recycle();
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                    }
                 }
             }
-        }
-        if(skinItems.size() > 0){
-            SkinView skinView = new SkinView(view, skinItems);
-            parseViewList.add(skinView);
+            if(skinItems.size() > 0){
+                SkinView skinView = new SkinView(view, skinItems);
+                parseViewList.add(skinView);
+            }
         }
     }
 
