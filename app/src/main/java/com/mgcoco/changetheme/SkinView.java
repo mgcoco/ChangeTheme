@@ -1,5 +1,6 @@
 package com.mgcoco.changetheme;
 
+import android.graphics.drawable.Drawable;
 import android.net.Uri;
 import android.os.Build;
 import android.view.View;
@@ -19,40 +20,44 @@ public class SkinView {
         this.skinItems = skinItems;
     }
 
-    public void apply(){
-        for(SkinItem skinItem: skinItems) {
-            if(skinItem.name.equals("background")) {
-                if(skinItem.typeName.equals("color")){
-                    if(SkinManager.getInstance().resourceIsNull()){
-                        view.setBackgroundResource(SkinManager.getInstance().getColor(skinItem.getResId()));
-                    }
-                    else{
-                        view.setBackgroundColor(SkinManager.getInstance().getColor(skinItem.getResId()));
-                    }
-                }
-                else if (skinItem.getTypeName().equals("drawable") || skinItem.getTypeName().equals("mipmap")) {
-                    if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN) {
-                        view.setBackground(SkinManager.getInstance().getDrawable(skinItem.getResId()));
-                    }
-                    else{
-                        view.setBackgroundDrawable(SkinManager.getInstance().getDrawable(skinItem.getResId()));
-                    }
-                }
-            }
-            else if(skinItem.getName().equals("src")){
-                if (skinItem.getTypeName().equals("drawable") || skinItem.getTypeName().equals("mipmap")){
-                    ((ImageView)view).setImageDrawable(SkinManager.getInstance().getDrawable(skinItem.getResId()));
-                }
-            }
-            else if(skinItem.getName().equals("textColor")){
-                if(skinItem.getEntryName() != null) {
-                    int col = SkinManager.getInstance().getColor(skinItem.getResId());
-                    ((TextView) view).setTextColor(col);
-                }
-            }
-            else if(skinItem.getName().equals("actualImageResource")){
-                if(skinItem.getEntryName() != null) {
-                    try {
+    public void apply() {
+        for (SkinItem skinItem : skinItems) {
+            try {
+                switch (skinItem.getName()) {
+                    case "background":
+                        if (skinItem.typeName.equals("color")) {
+                            if (SkinManager.getInstance().resourceIsNull()) {
+                                view.setBackgroundResource(SkinManager.getInstance().getColor(skinItem.getResId()));
+                            } else {
+                                view.setBackgroundColor(SkinManager.getInstance().getColor(skinItem.getResId()));
+                            }
+                        } else if (skinItem.getTypeName().equals("drawable") || skinItem.getTypeName().equals("mipmap")) {
+                            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN) {
+                                view.setBackground(SkinManager.getInstance().getDrawable(skinItem.getResId()));
+                            } else {
+                                view.setBackgroundDrawable(SkinManager.getInstance().getDrawable(skinItem.getResId()));
+                            }
+                        }
+                        break;
+                    case "src":
+                        if (skinItem.getTypeName().equals("drawable") || skinItem.getTypeName().equals("mipmap")) {
+                            ((ImageView) view).setImageDrawable(SkinManager.getInstance().getDrawable(skinItem.getResId()));
+                        }
+                        break;
+                    case "textColor":
+                        System.out.println("===>text color:" + view + ", " + " txt:" + ((TextView) view).getText() + ", " + skinItem.getResId());
+                        int col = SkinManager.getInstance().getColor(skinItem.getResId());
+                        ((TextView) view).setTextColor(col);
+                        break;
+                    case "tabIndicator":
+                        Method setSelectedTabIndicator = view.getClass().getDeclaredMethod("setSelectedTabIndicator", Drawable.class);
+                        setSelectedTabIndicator.invoke(view, SkinManager.getInstance().getDrawable(skinItem.getResId()));
+                        break;
+                    case "tabIndicatorColor":
+                        Method setSelectedTabIndicatorColor = view.getClass().getDeclaredMethod("setSelectedTabIndicatorColor", int.class);
+                        setSelectedTabIndicatorColor.invoke(view, SkinManager.getInstance().getColor(skinItem.getResId()));
+                        break;
+                    case "actualImageResource":
                         int drawable = SkinManager.getInstance().getDrawableId(skinItem.getResId());
                         Class<?> uriUtilClass = Class.forName("com.facebook.common.util.UriUtil");
                         Object uriUtil = uriUtilClass.newInstance();
@@ -61,10 +66,10 @@ public class SkinView {
 
                         Method setActualImageResource = view.getClass().getDeclaredMethod("setImageURI", Uri.class);
                         setActualImageResource.invoke(view, uri);
-                    } catch (Exception e) {
-                        e.printStackTrace();
-                    }
+                        break;
                 }
+            } catch (Exception e) {
+                e.printStackTrace();
             }
         }
     }

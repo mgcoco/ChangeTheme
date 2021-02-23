@@ -76,6 +76,12 @@ public class SkinManager {
         skinFactory.apply();
     }
 
+    public Resources getResources(Resources defaultResources){
+        if(resourceIsNull())
+            return defaultResources;
+        return resources;
+    }
+
     private void setLayoutInflaterFactory(LayoutInflater inflater){
         LayoutInflater layoutInflater = inflater;
         try {
@@ -141,4 +147,3 @@ public class SkinManager {
         return false;
     }
 }
-
