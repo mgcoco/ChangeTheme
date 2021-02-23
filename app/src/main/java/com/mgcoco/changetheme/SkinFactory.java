@@ -32,7 +32,7 @@ public class SkinFactory implements LayoutInflater.Factory2 {
     };
 
     private static final String[] THIRDPARTY_ATTRIBUTE_NAME = {
-            "actualImageResource",
+//            "actualImageResource",
             "tabIndicator",
             "tabIndicatorColor",
             "srcCompat",
@@ -42,7 +42,7 @@ public class SkinFactory implements LayoutInflater.Factory2 {
     private List<SkinView> parseViewList = new ArrayList<>();
 
     private static final String[] THIRDPARTY_VIEW = {
-            "com.facebook.drawee.view.SimpleDraweeView",
+//            "com.facebook.drawee.view.SimpleDraweeView",
             "com.google.android.material.tabs.TabLayout"
     };
 

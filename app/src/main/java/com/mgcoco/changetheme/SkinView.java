@@ -1,7 +1,6 @@
 package com.mgcoco.changetheme;
 
 import android.graphics.drawable.Drawable;
-import android.net.Uri;
 import android.os.Build;
 import android.view.View;
 import android.widget.ImageView;
@@ -62,17 +61,17 @@ public class SkinView {
                         Method setSelectedTabIndicatorColor = view.getClass().getDeclaredMethod("setSelectedTabIndicatorColor", int.class);
                         setSelectedTabIndicatorColor.invoke(view, SkinManager.getInstance().getColor(skinItem.getResId()));
                         break;
-                    case "actualImageResource":
-                        int drawableId = SkinManager.getInstance().getDrawableId(skinItem.getResId());
-                        if(drawableId != 0) {
-                            Class<?> uriUtilClass = Class.forName("com.facebook.common.util.UriUtil");
-                            Object uriUtil = uriUtilClass.newInstance();
-                            Method getUriForQualifiedResource = uriUtilClass.getDeclaredMethod("getUriForQualifiedResource", String.class, int.class);
-                            Object uri = getUriForQualifiedResource.invoke(uriUtil, SkinManager.getInstance().getPackageName(), drawableId);
-                            Method setActualImageResource = view.getClass().getDeclaredMethod("setImageURI", Uri.class);
-                            setActualImageResource.invoke(view, uri);
-                        }
-                        break;
+//                    case "actualImageResource":
+//                        int drawableId = SkinManager.getInstance().getDrawableId(skinItem.getResId());
+//                        if(drawableId != 0) {
+//                            Class<?> uriUtilClass = Class.forName("com.facebook.common.util.UriUtil");
+//                            Object uriUtil = uriUtilClass.newInstance();
+//                            Method getUriForQualifiedResource = uriUtilClass.getDeclaredMethod("getUriForQualifiedResource", String.class, int.class);
+//                            Object uri = getUriForQualifiedResource.invoke(uriUtil, SkinManager.getInstance().getPackageName(), drawableId);
+//                            Method setActualImageResource = view.getClass().getDeclaredMethod("setImageURI", Uri.class);
+//                            setActualImageResource.invoke(view, uri);
+//                        }
+//                        break;
                 }
             } catch (Exception e) {
                 e.printStackTrace();
