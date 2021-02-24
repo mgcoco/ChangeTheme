@@ -34,9 +34,7 @@ public class SkinFactory implements LayoutInflater.Factory2 {
     private static final String[] THIRDPARTY_ATTRIBUTE_NAME = {
 //            "actualImageResource",
             "tabIndicator",
-            "tabIndicatorColor",
-            "srcCompat",
-            "backgroundTint"
+            "tabIndicatorColor"
     };
 
     private List<SkinView> parseViewList = new ArrayList<>();
