@@ -39,11 +39,22 @@ public class SkinFactory implements LayoutInflater.Factory2 {
 
     private List<SkinView> parseViewList = new ArrayList<>();
 
+    private List<SkinView> dynamicViewList = new ArrayList<>();
+
     private static final String[] THIRDPARTY_VIEW = {
 //            "com.facebook.drawee.view.SimpleDraweeView",
             "com.google.android.material.tabs.TabLayout"
     };
 
+    private LayoutInflater.Factory mViewCreateFactory;
+    private LayoutInflater.Factory2 mViewCreateFactory2;
+
+    public void setInterceptFactory(LayoutInflater.Factory factory) {
+        mViewCreateFactory = factory;
+    }
+    public void setInterceptFactory2(LayoutInflater.Factory2 factory) {
+        mViewCreateFactory2 = factory;
+    }
 
     @Override
     public View onCreateView(View parent, String name, Context context, AttributeSet attrs) {
@@ -81,6 +92,23 @@ public class SkinFactory implements LayoutInflater.Factory2 {
         for(SkinView view: parseViewList) {
             view.apply();
         }
+
+        for(SkinView view: dynamicViewList) {
+            view.apply();
+        }
+    }
+
+    public List<SkinView> getDynamicViewList(){
+        return dynamicViewList;
+    }
+
+    public SkinView getDynamicSkinView(View view){
+        for(SkinView skinView: dynamicViewList) {
+            if(skinView.view == view){
+                return skinView;
+            }
+        }
+        return null;
     }
 
     private String getSupportedName(String viewName){
@@ -157,6 +185,7 @@ public class SkinFactory implements LayoutInflater.Factory2 {
             if(skinItems.size() > 0){
                 SkinView skinView = new SkinView(view, skinItems);
                 parseViewList.add(skinView);
+                skinView.apply();
             }
         }
     }
@@ -176,9 +205,47 @@ public class SkinFactory implements LayoutInflater.Factory2 {
             Constructor<? extends View> constructor = (Constructor<? extends View>) aClass.getConstructor(Context.class, AttributeSet.class);
             view = constructor.newInstance(context, attrs);
 
+            if(view == null) {
+                if (mViewCreateFactory2 != null) {
+                    view = mViewCreateFactory2.onCreateView(name, context, attrs);
+                    if (view == null) {
+                        view = mViewCreateFactory2.onCreateView(null, name, context, attrs);
+                    }
+                } else if (mViewCreateFactory != null) {
+                    view = mViewCreateFactory.onCreateView(name, context, attrs);
+                }
+            }
         } catch (Exception e) {
 //            e.printStackTrace();
         }
         return view;
+    }
+
+    public void unbindedDestroyedView(){
+        new Thread(() -> {
+            for(int i = 0; i < parseViewList.size(); i++) {
+                SkinView view = parseViewList.get(i);
+                if(!view.view.isAttachedToWindow()){
+                    parseViewList.remove(view);
+                }
+            }
+
+            for(int i = 0; i < dynamicViewList.size(); i++) {
+                SkinView view = dynamicViewList.get(i);
+                if(!view.view.isAttachedToWindow()){
+                    dynamicViewList.remove(view);
+                }
+            }
+        }).start();
+    }
+
+    public void resetApply(){
+        for(SkinView view: parseViewList) {
+            view.setApply(false);
+        }
+
+        for(SkinView view: dynamicViewList) {
+            view.setApply(false);
+        }
     }
 }

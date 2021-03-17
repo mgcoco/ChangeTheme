@@ -9,6 +9,10 @@ import android.graphics.drawable.Drawable;
 import android.view.LayoutInflater;
 import android.view.View;
 
+import androidx.core.view.LayoutInflaterCompat;
+import androidx.lifecycle.Lifecycle;
+import androidx.lifecycle.LifecycleEventObserver;
+
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
@@ -47,8 +51,8 @@ public class SkinManager {
 
 
     public void loadSkinApk(String path) {
+        skinFactory.resetApply();
         PackageManager packageManager = context.getPackageManager();
-//        System.out.println(path);
         PackageInfo packageArchiveInfo = packageManager.getPackageArchiveInfo(path, PackageManager.GET_ACTIVITIES);
         if(packageArchiveInfo != null) {
             packageName = packageArchiveInfo.packageName;
@@ -65,18 +69,45 @@ public class SkinManager {
 
     /**
      * Must called before setContentView
-     * @param layoutInflater
+     * @param inflater
      */
-    public void inflate(LayoutInflater layoutInflater){
-        setLayoutInflaterFactory(layoutInflater);
-        //androidx
+    public void inflate(LayoutInflater inflater){
+        Class<LayoutInflaterCompat> compatClass = LayoutInflaterCompat.class;
+        Class<LayoutInflater> inflaterClass = LayoutInflater.class;
         try {
-            Class<?> LayoutInflaterCompat = Class.forName("androidx.core.view.LayoutInflaterCompat");
-            Method setFactory2 = LayoutInflaterCompat.getDeclaredMethod("setFactory2", LayoutInflater.class, LayoutInflater.Factory2.class);
-            setFactory2.invoke(LayoutInflaterCompat, layoutInflater, skinFactory);
+            Field sCheckedField = compatClass.getDeclaredField("sCheckedField");
+            sCheckedField.setAccessible(true);
+            sCheckedField.setBoolean(inflater, false);
+            Field mFactory = inflaterClass.getDeclaredField("mFactory");
+            mFactory.setAccessible(true);
+            Field mFactory2 = inflaterClass.getDeclaredField("mFactory2");
+            mFactory2.setAccessible(true);
+            if (inflater.getFactory2() != null) {
+                skinFactory.setInterceptFactory2(inflater.getFactory2());
+            } else if (inflater.getFactory() != null) {
+                skinFactory.setInterceptFactory(inflater.getFactory());
+            }
+            mFactory2.set(inflater, skinFactory);
+            mFactory.set(inflater, skinFactory);
         } catch (Exception e) {
             e.printStackTrace();
         }
+    }
+
+    /**
+     * Must called before setContentView
+     * @param layoutInflater
+     */
+    public void inflate(LayoutInflater layoutInflater, Lifecycle lifecycle){
+        inflate(layoutInflater);
+        lifecycle.addObserver((LifecycleEventObserver) (source, event) -> {
+            if(event == Lifecycle.Event.ON_RESUME){
+                apply();
+            }
+            else if(event == Lifecycle.Event.ON_DESTROY) {
+                skinFactory.unbindedDestroyedView();
+            }
+        });
     }
 
     public void apply(){
@@ -87,18 +118,6 @@ public class SkinManager {
         if(resourceIsNull())
             return defaultResources;
         return resources;
-    }
-
-    private void setLayoutInflaterFactory(LayoutInflater inflater){
-        LayoutInflater layoutInflater = inflater;
-        try {
-            Field mFactorySet = LayoutInflater.class.getDeclaredField("mFactorySet");
-            mFactorySet.setAccessible(true);
-            mFactorySet.set(layoutInflater, false);
-        }
-        catch (Exception e) {
-            e.printStackTrace();
-        }
     }
 
     public String getPackageName(){
@@ -162,9 +181,34 @@ public class SkinManager {
         return resources.getIdentifier(resourceEntryName, resourceTypeName, packageName);
     }
 
+    public void putDynamicGroup(View view, String attribute, String typeName, int resId){
+        SkinView skinView = skinFactory.getDynamicSkinView(view);
+        if(skinView != null) {
+            for(SkinItem skinItem: skinView.skinItems){
+                if(skinItem.name.equals(attribute)){
+                    return;
+                }
+            }
+            skinView.skinItems.add(new SkinItem(attribute, typeName, null, resId));
+        }
+        else {
+            List<SkinItem> itemList = new ArrayList<>();
+            itemList.add(new SkinItem(attribute, typeName, null, resId));
+            skinView = new SkinView(view, itemList);
+            skinFactory.getDynamicViewList().add(skinView);
+        }
+        skinView.apply();
+    }
+
     public boolean resourceIsNull(){
         if(resources == null)
             return true;
         return false;
+    }
+
+    public void clearTheme(){
+        resources = null;
+        skinFactory.resetApply();
+        apply();
     }
 }
